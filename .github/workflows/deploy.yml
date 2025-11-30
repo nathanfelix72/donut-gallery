@@ -20,14 +20,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
     
-    - name: Deploy Lambda Function
+    - name: Deploy Lambda Function (Python)
       run: |
         cd lambda
-        zip -r function.zip .
+        zip function.zip lambda_function.py
         aws lambda update-function-code \
           --function-name GetDonutsFunction \
           --zip-file fileb://function.zip
-        echo "✅ Lambda function deployed"
+        echo "✅ Lambda function (Python) deployed"
     
     - name: Deploy Website to S3
       run: |
