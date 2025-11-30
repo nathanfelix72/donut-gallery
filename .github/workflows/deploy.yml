@@ -27,23 +27,23 @@ jobs:
         aws lambda update-function-code \
           --function-name GetDonutsFunction \
           --zip-file fileb://function.zip
-        echo "✅ Lambda function (Python) deployed"
+        echo "Lambda function (Python) deployed"
     
     - name: Deploy Website to S3
       run: |
         aws s3 cp index.html s3://donuts-finale-ngf-531/index.html \
           --cache-control "max-age=3600"
-        echo "✅ Website deployed to S3"
+        echo "Website deployed to S3"
     
     - name: Invalidate CloudFront Cache
       run: |
         aws cloudfront create-invalidation \
           --distribution-id E1R2A6DJ0B9PHK \
           --paths "/*"
-        echo "✅ CloudFront cache invalidated"
+        echo "CloudFront cache invalidated"
     
     - name: Deployment Summary
       run: |
-        echo "🎉 Deployment completed successfully!"
+        echo "Deployment completed successfully!"
         echo "Website: https://d9kx2czuwyum3.cloudfront.net"
         echo "API: https://txkeqkj50f.execute-api.us-east-1.amazonaws.com/donuts"
