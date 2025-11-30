@@ -1,0 +1,49 @@
+name: Deploy Donut Gallery to AWS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Deploy Lambda Function
+      run: |
+        cd lambda
+        zip -r function.zip .
+        aws lambda update-function-code \
+          --function-name GetDonutsFunction \
+          --zip-file fileb://function.zip
+        echo "✅ Lambda function deployed"
+    
+    - name: Deploy Website to S3
+      run: |
+        aws s3 cp index.html s3://donuts-finale-ngf-531/index.html \
+          --cache-control "max-age=3600"
+        echo "✅ Website deployed to S3"
+    
+    - name: Invalidate CloudFront Cache
+      run: |
+        aws cloudfront create-invalidation \
+          --distribution-id E1R2A6DJ0B9PHK \
+          --paths "/*"
+        echo "✅ CloudFront cache invalidated"
+    
+    - name: Deployment Summary
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "Website: https://d9kx2czuwyum3.cloudfront.net"
+        echo "API: https://txkeqkj50f.execute-api.us-east-1.amazonaws.com/donuts"

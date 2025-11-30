@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doughnut Gallery</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background-color: #fff7f0;
+        margin: 0;
+        padding: 2rem;
+        text-align: center;
+      }
+      h1 {
+        color: #d2691e;
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+      }
+      .loading {
+        font-size: 1.2rem;
+        color: #666;
+        margin: 2rem;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        justify-items: center;
+      }
+      .card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease;
+        width: 100%;
+        max-width: 260px;
+      }
+      .card:hover {
+        transform: translateY(-5px);
+      }
+      img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+      .caption {
+        padding: 0.8rem;
+        font-size: 1.1rem;
+        color: #333;
+        text-transform: capitalize;
+      }
+      .error {
+        color: #d32f2f;
+        padding: 1rem;
+        background: #ffebee;
+        border-radius: 8px;
+        margin: 2rem auto;
+        max-width: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Doughnut Gallery</h1>
+    <div id="loading" class="loading">Loading donuts...</div>
+    <div id="error" class="error" style="display: none"></div>
+    <div id="gallery" class="gallery"></div>
+
+    <script>
+      // Your actual API Gateway URL
+      const API_URL =
+        "https://txkeqkj50f.execute-api.us-east-1.amazonaws.com/donuts";
+
+      async function loadDonuts() {
+        const loadingEl = document.getElementById("loading");
+        const errorEl = document.getElementById("error");
+        const galleryEl = document.getElementById("gallery");
+
+        try {
+          const response = await fetch(API_URL);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const donuts = await response.json();
+
+          // Extract the Items array from the DynamoDB response
+          const donutItems = donuts.Items || [];
+
+          // Sort by donutid to ensure consistent order
+          donutItems.sort((a, b) => parseInt(a.donutid) - parseInt(b.donutid));
+
+          // Hide loading message
+          loadingEl.style.display = "none";
+
+          // Create cards for each donut
+          donutItems.forEach((donut) => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+              <img src="${donut.imageUrl}" alt="${donut.name}" />
+              <div class="caption">${donut.name}</div>
+            `;
+
+            galleryEl.appendChild(card);
+          });
+        } catch (error) {
+          console.error("Error loading donuts:", error);
+          loadingEl.style.display = "none";
+          errorEl.textContent = `Failed to load donuts: ${error.message}`;
+          errorEl.style.display = "block";
+        }
+      }
+
+      // Load donuts when page loads
+      loadDonuts();
+    </script>
+  </body>
+</html>
