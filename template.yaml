@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Paradise Donut Company - Serverless Donut Catalog
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: Environment name
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: python3.11
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Ref DonutTable
+
+Resources:
+  # S3 Bucket for static website hosting
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub donuts-finale-ngf-531-iac-${AWS::AccountId}
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  # S3 Bucket Policy to allow public read
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub ${WebsiteBucket.Arn}/*
+
+  # DynamoDB Table for donuts
+  DonutTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Donuts-IaC
+      AttributeDefinitions:
+        - AttributeName: donutId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: donutId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # Lambda Function to get donuts
+  GetDonutsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetDonutsFunction-IaC
+      CodeUri: lambda/
+      Handler: lambda_function.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref DonutTable
+      Events:
+        GetAllDonuts:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DonutApi
+            Path: /donuts
+            Method: get
+        GetSingleDonut:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DonutApi
+            Path: /donuts/{donutId}
+            Method: get
+
+  # Lambda Function to add a donut (optional - for admin)
+  # Removed - not needed for this project
+
+  # API Gateway (HTTP API for simpler setup)
+  DonutApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+        AllowOrigins:
+          - "*"
+
+Outputs:
+  WebsiteURL:
+    Description: URL for website hosted on S3
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+    Export:
+      Name: !Sub ${AWS::StackName}-WebsiteURL
+
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${DonutApi}.execute-api.${AWS::Region}.amazonaws.com
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiEndpoint
+
+  DonutTableName:
+    Description: DynamoDB table name
+    Value: !Ref DonutTable
+    Export:
+      Name: !Sub ${AWS::StackName}-TableName
+
+  BucketName:
+    Description: S3 bucket name
+    Value: !Ref WebsiteBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-BucketName
